@@ -45,7 +45,7 @@ func main() {
 
 func part1(hailstones []Hailstone) {
 	sum := 0
-	min, max := 200000000000000, 400000000000000
+	minRange, maxRange := 200000000000000, 400000000000000
 	for i, h1 := range hailstones {
 		for j := i + 1; j < len(hailstones); j++ {
 			h2 := hailstones[j]
@@ -57,7 +57,7 @@ func part1(hailstones []Hailstone) {
 			p3 := mgl64.Vec2{h2.pos[0], h2.pos[1]}
 			p4 := mgl64.Vec2{h2.pos[0] + h2.vel[0], h2.pos[1] + h2.vel[1]}
 			intersects, p := lineLine2d(p1, p2, p3, p4)
-			if intersects && p.X() >= float64(min) && p.X() <= float64(max) && p.Y() >= float64(min) && p.Y() <= float64(max) {
+			if intersects && p.X() >= float64(minRange) && p.X() <= float64(maxRange) && p.Y() >= float64(minRange) && p.Y() <= float64(maxRange) {
 				if p.Sub(p1).Dot(p2.Sub(p1)) >= 0 && p.Sub(p3).Dot(p4.Sub(p3)) >= 0 {
 					sum++
 				}
@@ -105,13 +105,6 @@ func lineLine2d(p1, p2, p3, p4 mgl64.Vec2) (bool, mgl64.Vec2) {
 	return true, mgl64.Vec2{x, y}
 }
 
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
 func part2(hailstones []HailstoneInt) {
 	// Generate SageMath script
 	fmt.Println()
@@ -132,7 +125,7 @@ func part2(hailstones []HailstoneInt) {
 	// github.com/alex-ant/gomath did only work for example and failed for real input cause of precision
 	// issues, so rechecked with sage math and this worked. So principally this should work with solving
 	// by simply doing gaussian elimination
-	getCoeffs2 := func(h0, h1 HailstoneInt, idx0, idx1 int) (int, int, int, int, int) {
+	getCoeffs := func(h0, h1 HailstoneInt, idx0, idx1 int) (int, int, int, int, int) {
 		hx0, hy0 := h0.pos[idx0], h0.pos[idx1]
 		hvx0, hvy0 := h0.vel[idx0], h0.vel[idx1]
 		hx1, hy1 := h1.pos[idx0], h1.pos[idx1]
@@ -142,12 +135,12 @@ func part2(hailstones []HailstoneInt) {
 		return (hvy1 - hvy0), (hvx0 - hvx1), (hy0 - hy1), (hx1 - hx0), (rhs)
 	}
 
-	a0, b0, c0, d0, rhs0 := getCoeffs2(hailstones[0], hailstones[1], 0, 1)
-	a1, b1, c1, d1, rhs1 := getCoeffs2(hailstones[0], hailstones[2], 0, 1)
-	a2, b2, c2, d2, rhs2 := getCoeffs2(hailstones[0], hailstones[3], 0, 1)
-	a3, b3, c3, d3, rhs3 := getCoeffs2(hailstones[0], hailstones[4], 0, 1)
-	a4, b4, c4, d4, rhs4 := getCoeffs2(hailstones[1], hailstones[2], 1, 2)
-	a5, b5, c5, d5, rhs5 := getCoeffs2(hailstones[1], hailstones[3], 1, 2)
+	a0, b0, c0, d0, rhs0 := getCoeffs(hailstones[0], hailstones[1], 0, 1)
+	a1, b1, c1, d1, rhs1 := getCoeffs(hailstones[0], hailstones[2], 0, 1)
+	a2, b2, c2, d2, rhs2 := getCoeffs(hailstones[0], hailstones[3], 0, 1)
+	a3, b3, c3, d3, rhs3 := getCoeffs(hailstones[0], hailstones[4], 0, 1)
+	a4, b4, c4, d4, rhs4 := getCoeffs(hailstones[1], hailstones[2], 1, 2)
+	a5, b5, c5, d5, rhs5 := getCoeffs(hailstones[1], hailstones[3], 1, 2)
 
 	fmt.Println()
 	fmt.Println("var('x y z vx vy vz')")
@@ -161,44 +154,4 @@ func part2(hailstones []HailstoneInt) {
 	fmt.Println()
 
 	fmt.Println("Part 2: ", 331109811422259+312547020340291+118035075297081) //761691907059631
-}
-
-func Print(a [][]float64, n int) {
-	for i := 0; i < n; i++ {
-		for j := 0; j <= n; j++ {
-			fmt.Printf("%.2f\t", a[i][j])
-		}
-		fmt.Println()
-	}
-}
-
-//func getIntersection(h1 Hailstone, h2 Hailstone) mgl64.Vec3 {
-//	p1 := h1.pos.Sub(h1.vel.Mul(10000))
-//	p2 := h1.pos.Add(h1.vel.Mul(10000))
-//	p3 := h2.pos.Sub(h2.vel.Mul(10000))
-//	p4 := h2.pos.Add(h2.vel.Mul(10000))
-//	intersects, p := segSeg3d(p1, p2, p3, p4)
-//	if !intersects {
-//		println("ouch")
-//	}
-//	return p
-//}
-
-func segSeg3d(p1, p2, p3, p4 mgl64.Vec3) (bool, mgl64.Vec3) {
-	u := p2.Sub(p1)
-	v := p4.Sub(p3)
-	w := p3.Sub(p1)
-
-	denom := u.Cross(v)
-	if denom.Len() == 0 {
-		return false, mgl64.Vec3{}
-	}
-
-	sI := w.Cross(v).Dot(denom) / denom.LenSqr()
-	tI := w.Cross(u).Dot(denom) / denom.LenSqr()
-
-	if sI >= 0 && sI <= 1 && tI >= 0 && tI <= 1 {
-		return true, p1.Add(u.Mul(sI))
-	}
-	return false, mgl64.Vec3{}
 }
